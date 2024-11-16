@@ -10,6 +10,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.SwingWorker;
+import edu.epsevg.prop.lab.c4.ForFun;
 
 /**
  *
@@ -95,10 +96,10 @@ public class Juga2 extends javax.swing.JFrame {
         //</editor-fold>
 
         // Definiu al vostre gust els jugadors a enfrontar.
-        Jugador p1 = new Aleatori();
+        Jugador p2 = new ForFun(6);
         //Jugador p1 = new Aleatori(); 
 
-        Jugador p2 = new Profe(2,false);
+        Jugador p1 = new Profe(2,false);
         //Jugador p2 = new Manual();
 
         boolean autoMode = true;
