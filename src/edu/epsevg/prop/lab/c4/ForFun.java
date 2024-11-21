@@ -1,7 +1,5 @@
 package edu.epsevg.prop.lab.c4;
-import edu.epsevg.prop.lab.c4.IAuto;
-import edu.epsevg.prop.lab.c4.Jugador;
-import edu.epsevg.prop.lab.c4.Tauler;
+
 
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
@@ -13,45 +11,25 @@ import edu.epsevg.prop.lab.c4.Tauler;
  * @author Markus
  */
 public class ForFun implements Jugador, IAuto {
-    private class Resultat {
-        public boolean esGuanyador;
-        public int jugadorGuanyador;
-        public int valor = 0;
-
-        public Resultat(boolean esTaulerGuanyador, int jugadorGuanyador, int valorTauler) {
-            this.esGuanyador = esTaulerGuanyador;
-            this.jugadorGuanyador = jugadorGuanyador;
-            this.valor = valorTauler;
-        }
-
-        @Override
-        public String toString() {
-            return "Resultat{" +
-                    "esGuanyador=" + esGuanyador +
-                    ", jugadorGuanyador=" + jugadorGuanyador +
-                    '}';
-        }
-    }
-
     /**
      * Propietats
      */
-    private Integer InfinitPositiu = Integer.MAX_VALUE;
-    private Integer InfinitNegatiu = -InfinitPositiu;
-    private String nom = "4Fun";
-    private int profunditat = 6;
-
+    private String name = "4Fun";
+    private int depth = 6;
+    private Integer MaxInfinity = Integer.MAX_VALUE;
+    private Integer MinInfinity = Integer.MIN_VALUE;
+    
     /**
      * Constructor
      **/
-    public ForFun() {}
+    public ForFun(){}
 
     /**
-     * Contrueix un Player amb la profunditat donada
-     * @param profunditat
+     * Contrueix un Player amb la depth pasada per parametre
+     * @param depth
      */
-    public ForFun(int profunditat) {
-        this.profunditat = profunditat;
+    public ForFun(int depth) {
+        this.depth = depth;
     }
 
     /**
@@ -59,93 +37,104 @@ public class ForFun implements Jugador, IAuto {
      */
     @Override
     public String nom() {
-        return this.nom;
+        return this.name;
     }
 
     /**
-     * @param t Tauler actual de joc
-     * @param color Color de la peca que possara
-     * @return
+     * @param t Tauler actual
+     * @param color Color de la fitxa a posar
+     * @return La millor columna on posar la fitxa
      */
     @Override
     public int moviment(Tauler t, int color) {
-        int valorActual, millorValor = InfinitNegatiu, millor_columna = 0;
+        int bestCol = 0, value, best = MinInfinity;
         for(int i=0; i < t.getMida(); i++){
             if(t.movpossible(i)){
-                Tauler aux = new Tauler(t);
-                aux.afegeix(i, color);
-                if(aux.solucio(i,color)){
-                    return i;
+                Tauler nextMove = new Tauler(t);
+                nextMove.afegeix(i, color);
+                //Comprovem si amb el pròxim moviment guanyem
+                if(nextMove.solucio(i,color)){
+                    bestCol = i;
+                    break;
                 }
-                valorActual = minimitzar(aux, InfinitNegatiu, InfinitPositiu, profunditat, color);
-                System.out.println("accio -> "+ i +" valor accio = "+valorActual);
-                if(valorActual > millorValor || !t.movpossible(millor_columna)){
-                    millor_columna = i;
-                    millorValor = valorActual;
+                // Calculem la heurística i decidim en quina columna posar la fitxa 
+                value = min(nextMove, color, depth, MinInfinity, MaxInfinity);
+                if(!t.movpossible(bestCol) || value > best){
+                    bestCol = i;
+                    best = value;
                 }
+                System.out.println("La columna: "+ i +", te un valor heuristic = "+ value);
             }
         }
-        System.out.println();
-        return millor_columna;
+        return bestCol;
     }
 
     /**
-     * Fitxa del oponent
-     * @param jugador
-     * @return la peca del oponent
-     */
-    private int oponent(int jugador) {
-        return -jugador;
-    }
-
-    /**
-     * Minimitza el valor de la funcio alfabeta
+     * Minimitza el value de la funcio alfabeta
      * @param t
      * @param alfa
      * @param beta
-     * @param profunditat
+     * @param depth
      * @param jugador
-     * @return el valor corresponent a minimitzar
+     * @return el value corresponent a min
      */
-    private int minimitzar(Tauler t, int alfa, int beta, int profunditat, int jugador){
-        if(profunditat == 0 || !t.espotmoure()) return evaluarTauler(t, jugador);
-        for(int i = 0; i < t.getMida(); i++){
-            if(t.movpossible(i)){
-                Tauler aux = new Tauler(t);
-                aux.afegeix(i, oponent(jugador));
-                if (aux.solucio(i, oponent(jugador))) {
-                    return InfinitNegatiu;
+    private int min(Tauler t,int player, int depth, int alpha, int beta){
+        if(depth == 0 || !t.espotmoure()) {
+            beta = heuristica(t, player);
+        } else {
+            for(int i = 0; i < t.getMida(); i++){
+                if(t.movpossible(i)){
+                    Tauler nextMove = new Tauler(t);
+                    nextMove.afegeix(i, -player);
+                    if (nextMove.solucio(i, -player)) {
+                        beta = MinInfinity;
+                        break;
+                    }
+                    int maxValue = max(nextMove, player, depth-1, alpha, beta);
+                    if (beta > maxValue){
+                        beta = maxValue;
+                    }
+                    if(beta <= alpha) {
+                        break;
+                    }
                 }
-                beta = Math.min(beta, maximitzar(aux, alfa, beta, profunditat-1, jugador));
-                if(beta <= alfa) return beta;
             }
         }
         return beta;
     }
 
     /**
-     * Maximitza el valor de la funcio alfabeta
+     * Maximitza el value de la funcio alfabeta
      * @param t
      * @param alfa
      * @param beta
-     * @param profunditat
+     * @param depth
      * @param jugador
-     * @return el valor corresponent a minimitzar
+     * @return el value corresponent a min
      */
-    private int maximitzar(Tauler t, int alfa, int beta, int profunditat, int jugador){
-        if(profunditat == 0 || !t.espotmoure()) return evaluarTauler(t,jugador);
+    // min(Tauler t,int player, int depth, int alpha, int beta)
+    private int max(Tauler t, int player, int depth, int alpha, int beta){
+        if(depth == 0 || !t.espotmoure()){
+            return heuristica(t,player);
+        }
         for(int i = 0 ;i < t.getMida(); i++){
             if(t.movpossible(i)){
-                Tauler aux = new Tauler (t);
-                aux.afegeix(i, jugador);
-                if(aux.solucio(i,jugador)) {
-                    return InfinitPositiu;
+                Tauler nextMove = new Tauler (t);
+                nextMove.afegeix(i, player);
+                if(nextMove.solucio(i,player)) {
+                    alpha = MaxInfinity;
+                    break;
                 }
-                alfa = Math.max(alfa, minimitzar(aux, alfa, beta, profunditat - 1, jugador));
-                if(alfa >= beta) return alfa;
+                int minValue = min(nextMove, player, depth-1, alpha, beta);
+                if (alpha < minValue){
+                    alpha = minValue;
+                }
+                if(alpha >= beta){
+                    break;
+                }
             }
         }
-        return alfa;
+        return alpha;
     }
 
     /**
@@ -154,15 +143,13 @@ public class ForFun implements Jugador, IAuto {
      * @param jugador
      * @return la heuristica
      */
-    private int evaluarTauler(Tauler t, int jugador) {
-
+    private int heuristica(Tauler t, int jugador) {
         int heuristica = 0;
         for (int i = 0; i < t.getMida(); i++) {
             for (int j = 0; j < t.getMida(); j++) {
-                heuristica += puntuarCasella(t, i, j, jugador).valor;
+                heuristica += puntuarCasella(t, i, j, jugador);
             }
         }
-
         return heuristica;
     }
 
@@ -185,90 +172,85 @@ public class ForFun implements Jugador, IAuto {
         return espais;
     }
 
+    private int puntuarCasella(Tauler t, int fil, int col, int jug) {
+        int heuristica = 0;
+
+        // Direcciones de búsqueda: vertical, horizontal, diagonal derecha y diagonal izquierda
+        int[][] direcciones = {
+            {1, 0},  // Vertical
+            {0, 1},  // Horizontal
+            {1, 1},  // Diagonal hacia abajo derecha
+            {1, -1}  // Diagonal hacia abajo izquierda
+        };
+
+        for (int[] direccion : direcciones) {
+            heuristica += calcularHeuristicaDireccion(t, fil, col, jug, direccion[0], direccion[1]);
+        }
+
+        return heuristica;
+    }
+
     /**
-     * Puntua la casella del tauler
-     * @param t
-     * @param fil
-     * @param col
-     * @param jug
-     * @return la puntuacio de la casella
+     * Calcula la heurística para una dirección específica (vertical, horizontal, diagonal)
+     * @param t Tablero
+     * @param fil Fila inicial
+     * @param col Columna inicial
+     * @param jug Jugador actual
+     * @param dirFil Dirección en la fila (incremento)
+     * @param dirCol Dirección en la columna (incremento)
+     * @return Valor heurístico de la dirección
      */
-    private Resultat puntuarCasella(Tauler t, int fil, int col, int jug) {
-        int maximMenor = -1;
-        int maximMajor = t.getMida();
-
+    private int calcularHeuristicaDireccion(Tauler t, int fil, int col, int jug, int dirFil, int dirCol) {
         int jugador = t.getColor(fil, col);
-        int j;
-        int contador, contadorBlancs, contadorPonderat;
-        int heuristicaCasella = 0;
+        int contador = 1, contadorBlancs = 0;
 
-        //Mirar adalt -> Tests OK
-        contador = 1;
-        contadorBlancs = 0;
-        for (int i = fil+1; i < maximMajor && i <= fil+3; i++) {
-            if (t.getColor(i, col) == jugador) contador++;
-            else{
+        for (int paso = 1; paso <= 3; paso++) {
+            int nuevaFila = fil + paso * dirFil;
+            int nuevaColumna = col + paso * dirCol;
+
+            if (nuevaFila < 0 || nuevaFila >= t.getMida() || nuevaColumna < 0 || nuevaColumna >= t.getMida()) {
+                break; // Nos salimos del tablero
+            }
+
+            if (t.getColor(nuevaFila, nuevaColumna) == jugador) {
+                contador++;
+            } else if (t.getColor(nuevaFila, nuevaColumna) == 0) {
+                contadorBlancs = espaisRestants(nuevaFila, nuevaColumna, t);
+                break;
+            } else {
                 break;
             }
         }
 
-        heuristicaCasella += jugador == jug ? calcularPuntuacio(contador, contadorBlancs) : -calcularPuntuacio(contador, contadorBlancs);
-
-        //Mirar diagonal adalt dreta -> Tests OK
-        contador = 1;
-        contadorBlancs = 0;
-        j = col+1;
-        for (int i = fil+1; i < maximMajor && j < maximMajor && i <= fil+3; i++) {
-            if (t.getColor(i, j++) == jugador) contador++;
-            else if (t.getColor(i, col) == 0){
-                //mirar los espacios verticales para abajo
-                contadorBlancs = espaisRestants(i,col,t);
-            }
+        if (jugador == jug) {
+            return calcularPuntuacio(contador, contadorBlancs);
+        } else {
+            return -calcularPuntuacio(contador, contadorBlancs);
         }
-        heuristicaCasella += jugador == jug ? calcularPuntuacio(contador, contadorBlancs) : -calcularPuntuacio(contador, contadorBlancs);
-
-        //Mirar dreta -> Tests OK
-        contador = 1;
-        contadorBlancs = 0;
-        for (int i = col+1; i < maximMajor && i <= col+3; i++) {
-            if (t.getColor(fil, i) == jugador) contador++;
-            else if (t.getColor(i, col) == 0){
-                //mirar los espacios verticales para abajo
-                contadorBlancs = espaisRestants(i,col,t);
-            }
-        }
-
-        heuristicaCasella += jugador == jug ? calcularPuntuacio(contador, contadorBlancs) : -calcularPuntuacio(contador, contadorBlancs);
-
-        //Mirar diagonal adalt esquerra -> Tests OK
-        contador = 1;
-        contadorBlancs = 0;
-        j = col-1;
-        for (int i = fil+1; i < maximMajor && j > maximMenor && i <= fil+3; i++) {
-            if (t.getColor(i, j--) == jugador) contador++;
-            else if (t.getColor(i, col) == 0){
-                //mirar los espacios verticales para abajo
-                contadorBlancs = espaisRestants(i,col,t);
-            }
-        }
-
-        heuristicaCasella += jugador == jug ? calcularPuntuacio(contador, contadorBlancs) : -calcularPuntuacio(contador, contadorBlancs);
-
-        return new Resultat(false, jugador, heuristicaCasella);
     }
 
     /**
-     * Calcula el comput de la casella tenint en compte les fitxes que te i les que queden per completar el 4 en ratlla
-     * @param puntuacio
-     * @param moviments
-     * @return la puntuacio de la casella
-     */
-    int calcularPuntuacio(int puntuacio, int moviments){
-        int puntuacioMoviments = 4 - moviments;
-        if(puntuacio==0) return 0;
-        else if(puntuacio==1) return 1*puntuacioMoviments;
-        else if(puntuacio==2) return 10*puntuacioMoviments;
-        else if(puntuacio==3) return 100*puntuacioMoviments;
-        else return 1000;
-    }
+    * Calcula la puntuación de la casilla según las fichas conectadas y los movimientos restantes.
+    * @param fichasConectadas Número de fichas conectadas
+    * @param movimientosRestantes Espacios vacíos restantes
+    * @return Puntuación calculada
+    */
+   int calcularPuntuacio(int fichasConectadas, int movimientosRestantes) {
+       int factorMovimiento = 4 - movimientosRestantes;
+
+       switch (fichasConectadas) {
+           case 0: 
+               return 0; // Sin fichas conectadas, no hay puntuación
+           case 1:
+               return factorMovimiento; // Una ficha conectada, peso mínimo
+           case 2:
+               return 10 * factorMovimiento; // Dos fichas conectadas, peso medio
+           case 3:
+               return 100 * factorMovimiento; // Tres fichas conectadas, peso alto
+           case 4:
+               return 1000; // Cuatro fichas conectadas, ganadora
+           default:
+               return 0; // Caso no esperado
+       }
+   }
 }
