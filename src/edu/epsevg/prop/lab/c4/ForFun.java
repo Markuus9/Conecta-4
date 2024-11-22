@@ -12,6 +12,7 @@ package edu.epsevg.prop.lab.c4;
  */
 public class ForFun implements Jugador, IAuto {
     private int depth = 5;
+    private int exploredNodes = 0; // Contador global para los nodos explorados.
     
     /**
      * Constructor
@@ -33,6 +34,7 @@ public class ForFun implements Jugador, IAuto {
 
     @Override
     public int moviment(Tauler t, int color) {
+        exploredNodes = 0; // Reinicia el contador al inici de cada jugada.
         int bestCol = 0, value, best = Integer.MIN_VALUE;
         for(int i=0; i < t.getMida(); i++){
             if(t.movpossible(i)){
@@ -49,9 +51,10 @@ public class ForFun implements Jugador, IAuto {
                     bestCol = i;
                     best = value;
                 }
-                System.out.println("La columna: "+ i +", te un valor heuristic = "+ value);
             }
         }
+        // Mostra el nombre de nodes explorats per consola.
+        System.out.println("Nodes explorats: " + exploredNodes);
         return bestCol;
     }
 
@@ -159,6 +162,7 @@ public class ForFun implements Jugador, IAuto {
         for (int i = 0; i < t.getMida(); i++) {
             for (int j = 0; j < t.getMida(); j++) {
                 value += heuristica(i, j, color, t);
+                exploredNodes++;
             }
         }
         return value;
