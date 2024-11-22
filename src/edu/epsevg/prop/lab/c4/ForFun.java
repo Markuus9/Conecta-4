@@ -11,13 +11,7 @@ package edu.epsevg.prop.lab.c4;
  * @author Markus
  */
 public class ForFun implements Jugador, IAuto {
-    /**
-     * Propietats
-     */
-    private String name = "4Fun";
-    private int depth = 6;
-    private Integer MaxInfinity = Integer.MAX_VALUE;
-    private Integer MinInfinity = Integer.MIN_VALUE;
+    private int depth = 5;
     
     /**
      * Constructor
@@ -25,29 +19,21 @@ public class ForFun implements Jugador, IAuto {
     public ForFun(){}
 
     /**
-     * Contrueix un Player amb la depth pasada per parametre
+     * Contrueix un Player amb la profunditat pasada per parametre
      * @param depth
      */
     public ForFun(int depth) {
         this.depth = depth;
     }
 
-    /**
-     * @return
-     */
     @Override
     public String nom() {
-        return this.name;
+        return "4Fun";
     }
 
-    /**
-     * @param t Tauler actual
-     * @param color Color de la fitxa a posar
-     * @return La millor columna on posar la fitxa
-     */
     @Override
     public int moviment(Tauler t, int color) {
-        int bestCol = 0, value, best = MinInfinity;
+        int bestCol = 0, value, best = Integer.MIN_VALUE;
         for(int i=0; i < t.getMida(); i++){
             if(t.movpossible(i)){
                 Tauler nextMove = new Tauler(t);
@@ -58,7 +44,7 @@ public class ForFun implements Jugador, IAuto {
                     break;
                 }
                 // Calculem la heurística i decidim en quina columna posar la fitxa 
-                value = min(nextMove, color, depth, MinInfinity, MaxInfinity);
+                value = min(nextMove, color, depth, Integer.MIN_VALUE, Integer.MAX_VALUE);
                 if(!t.movpossible(bestCol) || value > best){
                     bestCol = i;
                     best = value;
@@ -70,27 +56,27 @@ public class ForFun implements Jugador, IAuto {
     }
 
     /**
-     * Minimitza el value de la funcio alfabeta
-     * @param t
-     * @param alfa
-     * @param beta
-     * @param depth
-     * @param jugador
-     * @return el value corresponent a min
-     */
-    private int min(Tauler t,int player, int depth, int alpha, int beta){
+    * Calcula el valor minim mitjançant l'algoritme Minimax amb poda alfa-beta.
+    * @param t Tauler actual.
+    * @param color Color del jugador actual.
+    * @param depth Profunditat restant de la cerca.
+    * @param alpha Valor alfa actual.
+    * @param beta Valor beta actual.
+    * @return El valor màxim calculat.
+    */
+    private int min(Tauler t, int color, int depth, int alpha, int beta){
         if(depth == 0 || !t.espotmoure()) {
-            beta = heuristica(t, player);
+            beta = calcHeuristica(t, color);
         } else {
             for(int i = 0; i < t.getMida(); i++){
                 if(t.movpossible(i)){
                     Tauler nextMove = new Tauler(t);
-                    nextMove.afegeix(i, -player);
-                    if (nextMove.solucio(i, -player)) {
-                        beta = MinInfinity;
+                    nextMove.afegeix(i, -color);
+                    if (nextMove.solucio(i, -color)) {
+                        beta = Integer.MIN_VALUE;
                         break;
                     }
-                    int maxValue = max(nextMove, player, depth-1, alpha, beta);
+                    int maxValue = max(nextMove, color, depth-1, alpha, beta);
                     if (beta > maxValue){
                         beta = maxValue;
                     }
@@ -104,33 +90,33 @@ public class ForFun implements Jugador, IAuto {
     }
 
     /**
-     * Maximitza el value de la funcio alfabeta
-     * @param t
-     * @param alfa
-     * @param beta
-     * @param depth
-     * @param jugador
-     * @return el value corresponent a min
-     */
-    // min(Tauler t,int player, int depth, int alpha, int beta)
-    private int max(Tauler t, int player, int depth, int alpha, int beta){
+    * Calcula el valor màxim mitjançant l'algoritme Minimax amb poda alfa-beta.
+    * @param t Tauler actual.
+    * @param color Color del jugador actual.
+    * @param depth Profunditat restant de la cerca.
+    * @param alpha Valor alfa actual.
+    * @param beta Valor beta actual.
+    * @return El valor màxim calculat.
+    */
+    private int max(Tauler t, int color, int depth, int alpha, int beta){
         if(depth == 0 || !t.espotmoure()){
-            return heuristica(t,player);
-        }
-        for(int i = 0 ;i < t.getMida(); i++){
-            if(t.movpossible(i)){
-                Tauler nextMove = new Tauler (t);
-                nextMove.afegeix(i, player);
-                if(nextMove.solucio(i,player)) {
-                    alpha = MaxInfinity;
-                    break;
-                }
-                int minValue = min(nextMove, player, depth-1, alpha, beta);
-                if (alpha < minValue){
-                    alpha = minValue;
-                }
-                if(alpha >= beta){
-                    break;
+            return calcHeuristica(t,color);
+        } else {
+            for(int i = 0; i < t.getMida(); i++){
+                if(t.movpossible(i)){
+                    Tauler nextMove = new Tauler (t);
+                    nextMove.afegeix(i, color);
+                    if(nextMove.solucio(i,color)) {
+                        alpha = Integer.MAX_VALUE;
+                        break;
+                    }
+                    int minValue = min(nextMove, color, depth-1, alpha, beta);
+                    if (alpha < minValue){
+                        alpha = minValue;
+                    }
+                    if(alpha >= beta){
+                        break;
+                    }
                 }
             }
         }
@@ -138,119 +124,114 @@ public class ForFun implements Jugador, IAuto {
     }
 
     /**
-     * Evalua cada posicio del tauler i computa una heuristica
-     * @param t
-     * @param jugador
-     * @return la heuristica
-     */
-    private int heuristica(Tauler t, int jugador) {
-        int heuristica = 0;
+    * Calcula els espais buits restants per completar una línia de 4 en una direcció específica.
+    * @param row Fila inicial.
+    * @param col Columna inicial.
+    * @param t Tauler de joc.
+    * @return Nombre d'espais buits restants.
+    */
+   private int empty(int row, int col, Tauler t) {
+        int emptySpaces = 0; // Inicialitza el comptador d'espais buits.
+        int steps = 0; // Comptador de passos.
+
+        // Recorre fins a un màxim de 4 passos o fins a trobar un límit.
+        while (steps < 4 && row >= 0) {
+            if (t.getColor(row, col) == 0) {
+                emptySpaces++; // Incrementa si la casella està buida.
+            } else {
+                break; // Es para si es troba una casella ocupada.
+            }
+            steps++;
+            row--; // Es mou cap amunt en la fila
+        }
+        return emptySpaces;
+    }
+   
+    /**
+    * Calcula la heurística total del tauler per a un color específic.
+    * Suma les puntuacions heurístiques de totes les caselles del tauler.
+    * @param t Tauler de joc.
+    * @param color Color del jugador actual.
+    * @return Valor heurístic total del tauler.
+    */
+    private int calcHeuristica(Tauler t, int color) {
+        int value = 0;
         for (int i = 0; i < t.getMida(); i++) {
             for (int j = 0; j < t.getMida(); j++) {
-                heuristica += puntuarCasella(t, i, j, jugador);
+                value += heuristica(i, j, color, t);
             }
         }
-        return heuristica;
+        return value;
     }
 
     /**
-     * Calcula els espais restants que queden per completar el 4 en ratlla en la fila
-     * @param fila
-     * @param col
-     * @param t
-     * @return
-     */
-    private int espaisRestants(int fila, int col, Tauler t){
-        int espais = 0;
-        for(int i = 0; i < 4 && fila >= 0; ++i){
-            if(t.getColor(fila,col) == 0){
-                ++espais;
-            } else break;
-
-            fila -= i;
-        }
-        return espais;
-    }
-
-    private int puntuarCasella(Tauler t, int fil, int col, int jug) {
+    * Calcula la heurística total per a una casella específica del tauler.
+    * Explora totes les direccions possibles (vertical, horitzontal, diagonals).
+    * @param i Fila inicial de la casella.
+    * @param j Columna inicial de la casella.
+    * @param color Color del jugador actual.
+    * @param t Tauler de joc.
+    * @return Valor heurístic total per a la casella.
+    */
+    private int heuristica(int i, int j, int color,Tauler t) {
         int heuristica = 0;
 
-        // Direcciones de búsqueda: vertical, horizontal, diagonal derecha y diagonal izquierda
-        int[][] direcciones = {
+        // Direccions de cerca: vertical, horitzontal, diagonal dreta i diagonal esquerra
+        int[][] direccions = {
             {1, 0},  // Vertical
             {0, 1},  // Horizontal
-            {1, 1},  // Diagonal hacia abajo derecha
-            {1, -1}  // Diagonal hacia abajo izquierda
+            {1, 1},  // Diagonal cap avall dreta
+            {1, -1}  // Diagonal cap avall esquerra
         };
 
-        for (int[] direccion : direcciones) {
-            heuristica += calcularHeuristicaDireccion(t, fil, col, jug, direccion[0], direccion[1]);
+        // Calcula la heurística per a cada direcció.
+        for (int[] direccio : direccions) {
+            heuristica += calcSections(t, i, j, color, direccio[0], direccio[1]);
         }
 
         return heuristica;
     }
 
     /**
-     * Calcula la heurística para una dirección específica (vertical, horizontal, diagonal)
-     * @param t Tablero
-     * @param fil Fila inicial
-     * @param col Columna inicial
-     * @param jug Jugador actual
-     * @param dirFil Dirección en la fila (incremento)
-     * @param dirCol Dirección en la columna (incremento)
-     * @return Valor heurístico de la dirección
-     */
-    private int calcularHeuristicaDireccion(Tauler t, int fil, int col, int jug, int dirFil, int dirCol) {
-        int jugador = t.getColor(fil, col);
-        int contador = 1, contadorBlancs = 0;
+    * Calcula la heurística per a una direcció específica (vertical, horitzontal, diagonal).
+    * @param t Tauler actual.
+    * @param startRow Fila inicial.
+    * @param startCol Columna inicial.
+    * @param color Color del jugador actual.
+    * @param rowDirection Direcció en la fila (increment).
+    * @param colDirection Direcció en la columna (increment).
+    * @return Valor heurístic de la direcció.
+    */
+    private int calcSections(Tauler t, int startRow, int startCol, int color, int rowDirection, int colDirection) {
+        int cellColor = t.getColor(startRow, startCol); // Color de la casella inicial.
+        int count = 1; // Comptador de fitxes consecutives.
+        int emptySpaces = 0; // Comptador d'espais buits.
 
-        for (int paso = 1; paso <= 3; paso++) {
-            int nuevaFila = fil + paso * dirFil;
-            int nuevaColumna = col + paso * dirCol;
+        // Recorre fins a 3 posicions en la direcció especificada.
+        for (int step = 1; step <= 3; step++) {
+            int newRow = startRow + step * rowDirection; // Calcula la nova fila.
+            int newCol = startCol + step * colDirection; // Calcula la nova columna.
 
-            if (nuevaFila < 0 || nuevaFila >= t.getMida() || nuevaColumna < 0 || nuevaColumna >= t.getMida()) {
-                break; // Nos salimos del tablero
+            // Si la posició surt del tauler, es para.
+            if (newRow < 0 || newRow >= t.getMida() || newCol < 0 || newCol >= t.getMida()) {
+               break;
             }
 
-            if (t.getColor(nuevaFila, nuevaColumna) == jugador) {
-                contador++;
-            } else if (t.getColor(nuevaFila, nuevaColumna) == 0) {
-                contadorBlancs = espaisRestants(nuevaFila, nuevaColumna, t);
-                break;
-            } else {
-                break;
+            // Comprova el color de la nova casella.
+            if (t.getColor(newRow, newCol) == cellColor) {
+               count++; // Incrementa el comptador de fitxes consecutives.
+            } else if (t.getColor(newRow, newCol) == 0) {
+               // Si la casella està buida, compta els espais disponibles i para.
+               emptySpaces = empty(newRow, newCol, t);
+               break;
             }
         }
 
-        if (jugador == jug) {
-            return calcularPuntuacio(contador, contadorBlancs);
+        // Calcula la puntuació heurística basada en les fitxes consecutives i els espais buits.
+        if (cellColor == color) {
+           return (4 - emptySpaces) * (count * count * count); // Positiu si és del jugador actual.
         } else {
-            return -calcularPuntuacio(contador, contadorBlancs);
+           return -(4 - emptySpaces) * (count * count * count); // Negatiu si és del contrincant.
         }
     }
-
-    /**
-    * Calcula la puntuación de la casilla según las fichas conectadas y los movimientos restantes.
-    * @param fichasConectadas Número de fichas conectadas
-    * @param movimientosRestantes Espacios vacíos restantes
-    * @return Puntuación calculada
-    */
-   int calcularPuntuacio(int fichasConectadas, int movimientosRestantes) {
-       int factorMovimiento = 4 - movimientosRestantes;
-
-       switch (fichasConectadas) {
-           case 0: 
-               return 0; // Sin fichas conectadas, no hay puntuación
-           case 1:
-               return factorMovimiento; // Una ficha conectada, peso mínimo
-           case 2:
-               return 10 * factorMovimiento; // Dos fichas conectadas, peso medio
-           case 3:
-               return 100 * factorMovimiento; // Tres fichas conectadas, peso alto
-           case 4:
-               return 1000; // Cuatro fichas conectadas, ganadora
-           default:
-               return 0; // Caso no esperado
-       }
-   }
 }
